@@ -79,7 +79,7 @@ class Agent:
                  gamma=0.8,
                  epsilon_min=0,
                  memory_size=1024, 
-                 training_data_size=8192,
+                 training_data_size=512,
                  batch_size=32,
                  learning_rate=0.001,
                  load_model_from_disk=True):
@@ -120,7 +120,7 @@ batch_size = 32
 episodes = range(1000)
 for episode in episodes:
     episode_rewards = 0
-    print(f'starting episode nr: {episode} / epsilon = {agent.epsilon}')
+    # print(f'starting episode nr: {episode} / epsilon = {agent.epsilon}')
     state = np.reshape(env.reset(), [1, agent.observation_space_size])
     done = False   
     step_i = 0
@@ -137,7 +137,7 @@ for episode in episodes:
             agent.commit_episode_rewards_to_memory(episode_rewards)            
             calculate_avg_rewards_over_n_episodes = 100
             running_avg_rewards = agent.calculate_running_avg_of_recent_rewards(calculate_avg_rewards_over_n_episodes)            
-            print(f'episode {episode} / rewards {episode_rewards} / running avg rewards ({calculate_avg_rewards_over_n_episodes} episodes) {running_avg_rewards}')
+            print(f'episode {episode} / epsilon {agent.epsilon} / reward: {episode_rewards} / running avg rewards {running_avg_rewards} ({calculate_avg_rewards_over_n_episodes} episodes)')
             break
         state = next_state
     if episode % train_every_n_episodes == 0:
