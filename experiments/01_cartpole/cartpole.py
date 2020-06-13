@@ -29,7 +29,7 @@ class Agent:
     def commit_to_memory(self, state, action, reward, next_state, done):
         self.memorybank.append((state, action, reward, next_state, done))    
     
-    def commit_episode_rewards_to_memory(self, reward):
+    def commit_episode_rewards_to_memory(self, reward): 
         self.episode_rewards.append(reward)
     
     def retrieve_random_memories(self, n):            
@@ -47,15 +47,15 @@ class Agent:
             return  # dont start learning before we have enough observations
         minibatch = self.retrieve_random_memories(self.training_data_size)
         for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-              target = reward + self.gamma * \
+            target = reward + self.gamma * \
                        np.amax(self.model.predict(next_state)[0]) * (1 - int(done))
             target_f = self.model.predict(state)
             target_f[0][action] = target
             self.model.fit(state, target_f, epochs=1, batch_size=self.batch_size, verbose=0)
-        if self.epsilon > self.epsilon_min:
+        if  self.epsilon * self.epsilon_decay > self.epsilon_min:
             self.epsilon *= self.epsilon_decay        
+        else:
+            self.epsilon = self.epsilon_min
     
     def calculate_running_avg_of_recent_rewards(self, n):
         rewards = list(self.episode_rewards)[-n:]
@@ -81,9 +81,9 @@ class Agent:
                  gamma=0.95,
                  epsilon_min=0.01,
                  memory_size=20000, 
-                 training_data_size=128,
+                 training_data_size=512,
                  batch_size=32,
-                 learning_rate=0.001,
+                 learning_rate=0.01,
                  load_model_from_disk=True):
         self._model = None
         self.observation_space_size = observation_space_size
@@ -98,7 +98,7 @@ class Agent:
         self.epsilon_decay = epsilon_decay
         self.gamma = gamma
         self.learning_rate = learning_rate
-        self.model_filepath = '01_cartpolt/model.h5'
+        self.model_filepath = 'experiments/01_cartpole/model.h5'
         if load_model_from_disk:
             try:
                 self._model = load_model(self.model_filepath)
@@ -107,42 +107,40 @@ class Agent:
             
 
 agent = Agent(observation_space_size=env.observation_space.shape[0],
-              action_space_size=env.action_space.n)
+              action_space_size=env.action_space.n,
+              load_model_from_disk=True)
 
 # agent.model.summary()
 # out = agent.model.predict( [ [0.25, 0.5, 0.75, 1, 1] ] ) # untrained network output on a reset env
 
 done = False
 max_n_steps = 2000
-train_every_n_episodes  = 1
-render = True
-batch_size = 32
+render_every_n_episodes = 20
 
 
 episodes = range(1000)
 for episode in episodes:
     episode_rewards = 0
     state = np.reshape(env.reset(), [1, agent.observation_space_size])
-    done = False   
+    done = False
     step_i = 0
-    while step_i < max_n_steps:
+    while step_i < max_n_steps and not done:
         action = agent.choose_action(state)
         next_state, reward, done, info = env.step(action)
         next_state = np.reshape(next_state, [1,agent.observation_space_size])
         agent.commit_to_memory(state, action, reward, next_state, done)        
         episode_rewards += reward        
-        if render:
+        if episode % render_every_n_episodes == 0:
             env.render()        
-        step_i += 1
-        agent.learn_from_memories()
-        if episode % 10 == 0 and episode > 0:        
-            agent.save_model_to_disk()
+        step_i += 1        
+        state = next_state        
         if done:            
             agent.commit_episode_rewards_to_memory(episode_rewards)            
             calculate_avg_rewards_over_n_episodes = 100
             running_avg_rewards = agent.calculate_running_avg_of_recent_rewards(calculate_avg_rewards_over_n_episodes)            
             print(f'episode {episode} / epsilon {agent.epsilon} / reward: {episode_rewards} / running avg rewards {running_avg_rewards} ({calculate_avg_rewards_over_n_episodes} episodes)')
-            break
-        state = next_state
+    agent.learn_from_memories()
+    if episode % 10 == 0 and episode > 0:        
+            agent.save_model_to_disk()
 env.close()
 
