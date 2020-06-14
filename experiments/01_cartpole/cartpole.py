@@ -31,16 +31,17 @@ for episode in episodes:
         next_state = np.reshape(next_state, [1,agent.observation_space_size])
         agent.memorybank.commit_experience_to_memory(state, action, reward, next_state, done)        
         episode_rewards += reward        
-        if episode % render_every_n_episodes == 0:
-            env.render()        
         step_i += 1        
         state = next_state
+        if episode % render_every_n_episodes == 0:
+            env.render()        
+        if episode % render_every_n_episodes != 0:
+            agent.learn_from_memories() # learning + rendering = lag
         if done:
             agent.memorybank.commit_rewards_to_memory(episode_rewards)
             calculate_avg_rewards_over_n_episodes = 100
             running_avg_rewards = agent.memorybank.calculate_running_avg_of_recent_rewards(calculate_avg_rewards_over_n_episodes)
             print(f'episode {episode} / epsilon {agent.epsilon} / reward: {episode_rewards} / running avg rewards {running_avg_rewards} ({calculate_avg_rewards_over_n_episodes} episodes)')
-    agent.learn_from_memories()
     if episode % save_model_every_n_episodes == 0 and episode > 0:
             agent.save_model_to_disk()
 env.close()

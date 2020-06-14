@@ -3,8 +3,9 @@ from experiments.memorybank import MemoryBank
 
 
 class Agent:    
-    def __init__(self, memory_size=None):
+    def __init__(self, memory_size=None, model_filepath=None):
         self._model = None
+        self.model_filepath = model_filepath
         self.memorybank = MemoryBank(memory_size) if memory_size else MemoryBank()
     
     def make_model(self):

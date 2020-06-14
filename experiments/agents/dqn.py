@@ -7,8 +7,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 import random
-from experiments.agent import Agent
-from experiments.memorybank import MemoryBank
+from experiments.agents.agent import Agent
 
     
 class DQNAgent(Agent):
@@ -58,6 +57,7 @@ class DQNAgent(Agent):
                  batch_size=32,
                  learning_rate=0.01,
                  load_model_from_disk=True):
+        super().__init__(memory_size=memory_size, model_filepath=model_filepath)
         self.observation_space_size = observation_space_size
         self.action_space_size = action_space_size
         self.batch_size = batch_size
